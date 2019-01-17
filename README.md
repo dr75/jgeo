@@ -1,4 +1,4 @@
 jgeo
 ====
 
-Java library for basic geography computations.
+Java library for basic geographic computations.
