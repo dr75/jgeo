@@ -35,7 +35,7 @@ public class BoundingBox implements BoundingShape {
         return new LatLon(latMax, lonMax);
     }
 
-    public <E extends Location> BoundingBox(Collection<E> data) {
+    public <E extends LocationObject> BoundingBox(Collection<E> data) {
         double latMin = Double.MAX_VALUE;
         double latMax = -Double.MAX_VALUE;
         double lonMin = Double.MAX_VALUE;
