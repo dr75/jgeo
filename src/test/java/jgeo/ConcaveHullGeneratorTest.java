@@ -9,26 +9,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
-public class ConcaveHullGeneratorTest {
-
-    @Rule
-    public TestWatcher watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            System.out.println("* Test starting: " + description.getMethodName());
-        }
-
-        @Override
-        protected void finished(Description description) {
-            System.out.println("* Test finished: " + description.getMethodName());
-            System.out.println();
-        }
-    };
+public class ConcaveHullGeneratorTest extends TestBase {
 
     private SortedSet<LatLon> sortedSet(List<LatLon> list) {
         SortedSet<LatLon> res = ConcaveHullGenerator.createSortedSet();

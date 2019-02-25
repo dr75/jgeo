@@ -138,11 +138,11 @@ public class SpatialHash<E extends LocationObject> implements Iterable<E> {
 
 		public void add(E e) {
 			LatLon p = e.getLatLon();
-			if (p.lat < latMin) {
-				latMin = p.lat;
+			if (p.lat < this.latMin) {
+				this.latMin = p.lat;
 			}
-			if (p.lat > latMax) {
-				latMax = p.lat;
+			if (p.lat > this.latMax) {
+			    this.latMax = p.lat;
 			}
 			this.data.add(new DataCell<>(e));
 		}
@@ -227,21 +227,70 @@ public class SpatialHash<E extends LocationObject> implements Iterable<E> {
 		return res;
 	}
 	
+	// get the value closest to at 
     public E get(LatLon at) {
-        int row = this.hashFunction.lookup(this.rows, at.lat);
-        int rowMin = Math.max(row - 1, 0);
-        int rowMax = Math.min(row + 1, this.rows.size() - 1);
+        // This method first checks the row this coordinate would be stored in.
+        // As this value might have a big horizontal distance, we then expand  
+        // the search to neighbor rows that may contain other values that are 
+        // closer due to a small horizontal distance.
+        //
+        // So in the worst case, this means we have to go through all rows, which
+        // is O(sqrt(n)).
         
-        E res = null;
-        double distMin = Double.MAX_VALUE;
-        for (int r = rowMin; r <= rowMax; r++) {
-            E e = this.rows.get(r).get(at);
+        if (this.rows.size() == 0) {
+            return null;
+        }
+        
+        // Compute the vertical distance between two points on the same longitude
+        // with a distance of one degree so that we can use that conversion later
+        // to speed up measurements.
+        double latToMeter = at.getDistanceInMeters(new LatLon(at.lat + 1, at.lon));
+
+        // get the closest row
+        int row_idx = this.hashFunction.lookup(this.rows, at.lat);
+        
+        // get the best value in this row
+        E res = this.rows.get(row_idx).get(at);
+        double distMin = res.getLatLon().getDistanceInMeters(at);
+        
+        // now look for closer values in the neighbor-rows until they can't be any closer
+        for (int r = row_idx + 1; r < this.rows.size(); r++) {
+            // check if the value with the smallest latitude in that row could be closer than res
+            DataRow row = this.rows.get(r);
+            double distRowLat = row.latMin - at.lat;
+            double distRow = distRowLat * latToMeter;
+            if (distRow >= distMin) {
+                break;
+            }
+
+            // might be closer, so check the closest value of that row
+            E e = row.get(at);
             double dist = e.getLatLon().getDistanceInMeters(at);
             if (dist < distMin) {
                 distMin = dist;
                 res = e;
             }
         }
+        
+        // same for the rows below
+        for (int r = row_idx - 1; r >= 0; r--) {
+            // check if the value with the biggest latitude in that row could be closer than res
+            DataRow row = this.rows.get(r);
+            double distRowLat = at.lat - row.latMax;
+            double distRow = distRowLat * latToMeter;
+            if (distRow >= distMin) {
+                break;
+            }
+
+            // might be closer, so check the closest value of that row
+            E e = row.get(at);
+            double dist = e.getLatLon().getDistanceInMeters(at);
+            if (dist < distMin) {
+                distMin = dist;
+                res = e;
+            }
+        }
+        
         return res;
     }
 
